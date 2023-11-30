@@ -25,6 +25,7 @@ locals {
           protocol  = rule.protocol
           ports     = rule.ports
           ip        = ip
+          use_nsg   = use_nsg
         }
       ]
     ]
