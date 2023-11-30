@@ -10,12 +10,12 @@ variable "compartment_id" {
 
 variable "network_security_groups" {
   type = map(map(object({
-    direction = string
-    protocol  = string
-    ports     = object({ min : number, max : number })
-    ips       = set(string)
-    nsg_id    = optional(string)
-    use_nsg   = optional(bool)
+    direction   = string
+    protocol    = string
+    ports       = object({ min : number, max : number })
+    ips         = set(string)
+    source_type = optional(string)
+    nsg         = optional(string)
   })))
 
   default = {}

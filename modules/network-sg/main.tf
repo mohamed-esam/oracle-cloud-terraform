@@ -19,14 +19,14 @@ locals {
     for group, rules in var.network_security_groups : [
       for rulename, rule in rules : [
         for ip in rule.ips : {
-          group     = group
-          rulename  = rulename
-          direction = rule.direction
-          protocol  = rule.protocol
-          ports     = rule.ports
-          ip        = ip
-          nsg_id    = rule.nsg_id
-          use_nsg   = rule.use_nsg
+          group       = group
+          rulename    = rulename
+          direction   = rule.direction
+          protocol    = rule.protocol
+          ports       = rule.ports
+          ip          = ip
+          source_type = rule.source_type
+          nsg         = rule.nsg
         }
       ]
     ]
@@ -53,8 +53,8 @@ resource "oci_core_network_security_group_security_rule" "ingress_rule" {
   protocol                  = lookup(local.protocols, each.value.protocol)
   description               = each.value.rulename
   stateless                 = false
-  source                    = var.use_nsg ? each.value.nsg_id : each.value.ip
-  source_type               = var.use_nsg ? "NETWORK_SECURITY_GROUP" : "CIDR_BLOCK"
+  source_type               = coalesce(each.value.source_type, "CIDR_BLOCK") # use CIDR_BLOCK as default option
+  source                    = each.value.source_type == "CIDR_BLOCK" ? each.value.ip : each.value.nsg
 
   dynamic "tcp_options" {
     for_each = each.value.protocol == "tcp" ? [each.value.port] : []
@@ -88,8 +88,8 @@ resource "oci_core_network_security_group_security_rule" "egress_rule" {
   protocol                  = lookup(local.protocols, each.value.protocol)
   description               = each.value.rulename
   stateless                 = false
-  destination               = var.use_nsg ? each.value.nsg_id : each.value.ip
-  destination_type          = var.use_nsg ? "NETWORK_SECURITY_GROUP" : "CIDR_BLOCK"
+  source_type               = coalesce(each.value.source_type, "CIDR_BLOCK") # use CIDR_BLOCK as default option
+  source                    = each.value.source_type == "CIDR_BLOCK" ? each.value.ip : each.value.nsg
 
   dynamic "tcp_options" {
     for_each = each.value.protocol == "tcp" ? [each.value.ports] : []
