@@ -15,7 +15,7 @@ variable "network_security_groups" {
     ports       = object({ min : number, max : number })
     ips         = optional(set(string))
     source_type = optional(string)
-    nsg         = optional(string)
+    source_nsg         = optional(string)
   })))
 
   default = {}
