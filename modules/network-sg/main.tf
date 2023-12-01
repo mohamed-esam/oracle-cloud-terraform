@@ -24,10 +24,10 @@ locals {
           direction        = rule.direction
           protocol         = rule.protocol
           ports            = rule.ports
-          ips              = rule.ips
-          source_type      = rule.source_type
-          destination_type = rule.destination_type
-          nsg              = rule.nsg
+          ips              = can(rule.ips) ? rule.ips : []
+          source_type      = can(rule.source_type) ? rule.source_type : null
+          destination_type = can(rule.destination_type) ? rule.destination_type : null
+          nsg              = can(rule.nsg) ? rule.nsg : null
         }
       ]
     ]
