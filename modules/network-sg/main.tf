@@ -55,7 +55,7 @@ resource "oci_core_network_security_group_security_rule" "ingress_rule" {
   description               = each.value.rulename
   stateless                 = false
   source_type               = coalesce(each.value.source_type, "CIDR_BLOCK") # use CIDR_BLOCK as default option
-  source                    = each.value.source_type == "CIDR_BLOCK" ? each.value.ip : each.value.nsg
+  source                    = each.value.source_type == "CIDR_BLOCK" ? each.value.ip : each.value.source_nsg
 
   dynamic "tcp_options" {
     for_each = each.value.protocol == "tcp" ? [each.value.port] : []
@@ -91,7 +91,7 @@ resource "oci_core_network_security_group_security_rule" "egress_rule" {
   description               = each.value.rulename
   stateless                 = false
   source_type               = coalesce(each.value.source_type, "CIDR_BLOCK") # use CIDR_BLOCK as default option
-  source                    = each.value.source_type == "CIDR_BLOCK" ? each.value.ip : each.value.nsg
+  source                    = each.value.source_type == "CIDR_BLOCK" ? each.value.ip : each.value.source_nsg
 
 
   dynamic "tcp_options" {
