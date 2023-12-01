@@ -13,7 +13,7 @@ variable "network_security_groups" {
     direction   = string
     protocol    = string
     ports       = object({ min : number, max : number })
-    ips         = set(string)
+    ips         = optional(set(string))
     source_type = optional(string)
     nsg         = optional(string)
   })))
