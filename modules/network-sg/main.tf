@@ -15,25 +15,32 @@ locals {
   To:
     [{group = "group-1", rulename= "rule-1", port = 22, ip = 1}, {group = "group-1", rulename= "rule-1", port = 22, ip = 2} ]
   */
-  flatten_rules = flatten([
+  flatten_rules_ip = flatten([
     for group, rules in var.network_security_groups : [
       for rulename, rule in rules : [
-        merge(
-          {
-            group     = group
-            rulename  = rulename
-            direction = rule.direction
-            protocol  = rule.protocol
-            ports     = rule.ports
-          },
-          {
-            source_type      = can(rule.source_type) ? rule.source_type : null
-            destination_type = can(rule.destination_type) ? rule.destination_type : null
-            nsg              = can(rule.nsg) ? rule.nsg : null
-          },
-          rule.source_type != "NETWORK_SECURITY_GROUP" ? { ips = rule.ips } : {}
-        )
+        for ip in rule.ips : {
+          group     = group
+          rulename  = rulename
+          direction = rule.direction
+          protocol  = rule.protocol
+          port      = rule.port
+          ip        = ip
+        }
       ]
+    ]
+  ])
+  flatten_rules_nsg = flatten([
+    for group, rules in var.network_security_groups : [
+      for rulename, rule in rules : {
+        group            = group
+        rulename         = rulename
+        direction        = rule.direction
+        protocol         = rule.protocol
+        port             = rule.port
+        source_type      = can(rule.source_type) ? rule.source_type : null
+        destination_type = can(rule.destination_type) ? rule.destination_type : null
+        nsg              = rule.nsg
+      }
     ]
   ])
 }
@@ -49,10 +56,10 @@ resource "oci_core_network_security_group" "security_group" {
 
 // Create INGRESS rules
 resource "oci_core_network_security_group_security_rule" "ingress_rule" {
-  for_each = { for rule in local.flatten_rules :
+  for_each = { for rule in "${rule.destination_type == "NETWORK_SECURITY_GROUP" || rule.source_type == "NETWORK_SECURITY_GROUP" ? local.flatten_rules_nsg : local.flatten_rules_ip}" :
     rule.direction == "INGRESS" && rule.source_type == "NETWORK_SECURITY_GROUP" ?
     "${rule.group}:${rule.rulename}:${rule.direction}:${rule.nsg}:${rule.ports.min}:${rule.ports.max}" :
-  "${rule.group}:${rule.rulename}:${rule.direction}:${rule.ips}:${rule.ports.min}:${rule.ports.max}" => rule }
+  "${rule.group}:${rule.rulename}:${rule.direction}:${rule.ip}:${rule.ports.min}:${rule.ports.max}" => rule }
 
   network_security_group_id = oci_core_network_security_group.security_group[each.value.group].id
   direction                 = "INGRESS"
@@ -60,7 +67,7 @@ resource "oci_core_network_security_group_security_rule" "ingress_rule" {
   description               = each.value.rulename
   stateless                 = false
   source_type               = coalesce(each.value.source_type, "CIDR_BLOCK") # use CIDR_BLOCK as default option
-  source                    = each.value.source_type == "CIDR_BLOCK" ? each.value.ips : each.value.nsg
+  source                    = each.value.source_type == "CIDR_BLOCK" ? each.value.ip : each.value.nsg
 
   dynamic "tcp_options" {
     for_each = each.value.protocol == "tcp" ? [each.value.port] : []
@@ -85,10 +92,10 @@ resource "oci_core_network_security_group_security_rule" "ingress_rule" {
 
 // Create EGRESS rules
 resource "oci_core_network_security_group_security_rule" "egress_rule" {
-  for_each = { for rule in local.flatten_rules :
+  for_each = { for rule in "${rule.destination_type == "NETWORK_SECURITY_GROUP" || rule.source_type == "NETWORK_SECURITY_GROUP" ? local.flatten_rules_nsg : local.flatten_rules_ip}" :
     rule.direction == "EGRESS" && rule.destination_type == "NETWORK_SECURITY_GROUP" ?
     "${rule.group}:${rule.rulename}:${rule.direction}:${rule.nsg}:${rule.ports.min}:${rule.ports.max}" :
-  "${rule.group}:${rule.rulename}:${rule.direction}:${rule.ips}:${rule.ports.min}:${rule.ports.max}" => rule }
+  "${rule.group}:${rule.rulename}:${rule.direction}:${rule.ip}:${rule.ports.min}:${rule.ports.max}" => rule }
 
   network_security_group_id = oci_core_network_security_group.security_group[each.value.group].id
   direction                 = "EGRESS"
@@ -96,7 +103,7 @@ resource "oci_core_network_security_group_security_rule" "egress_rule" {
   description               = each.value.rulename
   stateless                 = false
   destination_type          = coalesce(each.value.destination_type, "CIDR_BLOCK") # use CIDR_BLOCK as default option
-  destination               = each.value.source_type == "CIDR_BLOCK" ? each.value.ips : each.value.nsg
+  destination               = each.value.source_type == "CIDR_BLOCK" ? each.value.ip : each.value.nsg
 
 
   dynamic "tcp_options" {
