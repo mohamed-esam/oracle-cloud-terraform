@@ -56,7 +56,7 @@ resource "oci_core_network_security_group" "security_group" {
 
 // Create INGRESS rules
 resource "oci_core_network_security_group_security_rule" "ingress_rule" {
-  for_each = { for rule in "${local.flatten_rules_nsg.source_type == "NETWORK_SECURITY_GROUP" ? local.flatten_rules_nsg : local.flatten_rules_ip}" :
+  for_each = { for rule in "${local.flatten_rules_nsg.source_type == "NETWORK_SECURITY_GROUP" || local.flatten_rules_nsg.destination_type == "NETWORK_SECURITY_GROUP" ? local.flatten_rules_nsg : local.flatten_rules_ip}" :
     rule.direction == "INGRESS" && rule.source_type == "NETWORK_SECURITY_GROUP" ?
     "${rule.group}:${rule.rulename}:${rule.direction}:${rule.nsg}:${rule.ports.min}:${rule.ports.max}" :
   "${rule.group}:${rule.rulename}:${rule.direction}:${rule.ip}:${rule.ports.min}:${rule.ports.max}" => rule }
@@ -92,7 +92,7 @@ resource "oci_core_network_security_group_security_rule" "ingress_rule" {
 
 // Create EGRESS rules
 resource "oci_core_network_security_group_security_rule" "egress_rule" {
-  for_each = { for rule in "${local.flatten_rules_nsg.destination_type == "NETWORK_SECURITY_GROUP" ? local.flatten_rules_nsg : local.flatten_rules_ip}" :
+  for_each = { for rule in "${local.flatten_rules_nsg.destination_type == "NETWORK_SECURITY_GROUP" || local.flatten_rules_nsg.source_type == "NETWORK_SECURITY_GROUP" ? local.flatten_rules_nsg : local.flatten_rules_ip}" :
     rule.direction == "EGRESS" && rule.destination_type == "NETWORK_SECURITY_GROUP" ?
     "${rule.group}:${rule.rulename}:${rule.direction}:${rule.nsg}:${rule.ports.min}:${rule.ports.max}" :
   "${rule.group}:${rule.rulename}:${rule.direction}:${rule.ip}:${rule.ports.min}:${rule.ports.max}" => rule }
