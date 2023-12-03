@@ -23,7 +23,7 @@ locals {
           rulename  = rulename
           direction = rule.direction
           protocol  = rule.protocol
-          port      = rule.port
+          ports     = rule.ports
           ip        = ip
         }
       ]
@@ -36,7 +36,7 @@ locals {
         rulename         = rulename
         direction        = rule.direction
         protocol         = rule.protocol
-        port             = rule.port
+        ports            = rule.ports
         source_type      = can(rule.source_type) ? rule.source_type : null
         destination_type = can(rule.destination_type) ? rule.destination_type : null
         nsg              = rule.nsg
@@ -70,7 +70,7 @@ resource "oci_core_network_security_group_security_rule" "ingress_rule" {
   source                    = each.value.source_type == "CIDR_BLOCK" ? each.value.ip : each.value.nsg
 
   dynamic "tcp_options" {
-    for_each = each.value.protocol == "tcp" ? [each.value.port] : []
+    for_each = each.value.protocol == "tcp" ? [each.value.ports] : []
     content {
       destination_port_range {
         max = tcp_options.value.max
@@ -80,7 +80,7 @@ resource "oci_core_network_security_group_security_rule" "ingress_rule" {
   }
 
   dynamic "udp_options" {
-    for_each = each.value.protocol == "udp" ? [each.value.port] : []
+    for_each = each.value.protocol == "udp" ? [each.value.ports] : []
     content {
       destination_port_range {
         max = udp_options.value.max
