@@ -24,7 +24,8 @@ locals {
           direction = rule.direction
           protocol  = rule.protocol
           ports     = rule.ports
-          ip        = ip
+          ip        = can(rule.ip) ? rule.ip : ""
+          #   for ip in data.oci_core_private_ips.primary_vnic_primary_private_ip[each.value.instance_key].private_ips
         }
       ]
     ]
